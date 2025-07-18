@@ -20,7 +20,7 @@ const environments = {
     production: {
         NODE_ENV: 'production',
         NUXT_ENV: 'production',
-        NUXT_PUBLIC_API_URL: 'https://your-production-domain.com',
+        NUXT_PUBLIC_API_URL: 'galaxy-registry-42.netlify.app',
         NUXT_PUBLIC_APP_NAME: 'Galaxy Registry 42',
         NUXT_DEBUG: 'false',
         NUXT_LOG_LEVEL: 'error',
