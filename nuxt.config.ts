@@ -38,12 +38,17 @@ export default defineNuxtConfig({
     }
   },
 
-  // Environment-specific configuration
-  ...(process.env.NODE_ENV === 'production' && {
-    nitro: {
+  // Nitro configuration for static generation
+  nitro: {
+    preset: 'static',
+    ...(process.env.NODE_ENV === 'production' && {
       minify: true,
       compressPublicAssets: true,
-    },
+    })
+  },
+
+  // Environment-specific configuration
+  ...(process.env.NODE_ENV === 'production' && {
     experimental: {
       payloadExtraction: false
     }
