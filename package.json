@@ -16,7 +16,9 @@
     "env:show": "node scripts/set-env.js --show",
     "env:help": "node scripts/set-env.js --help",
     "dev:local": "npm run env:local && nuxt dev",
-    "build:production": "npm run env:production && nuxt build"
+    "build:production": "npm run env:production && nuxt build",
+    "build:netlify": "NODE_ENV=production NUXT_ENV=production NUXT_PUBLIC_API_URL=https://galaxy-registry-42.netlify.app NUXT_PUBLIC_APP_NAME='Galaxy Registry 42' NUXT_DEBUG=false NUXT_LOG_LEVEL=error NUXT_PUBLIC_ENABLE_DEV_TOOLS=false NUXT_PUBLIC_HOT_RELOAD=false nuxt build",
+    "netlify:update-domain": "node scripts/update-netlify-domain.js"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",

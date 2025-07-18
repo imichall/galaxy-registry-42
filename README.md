@@ -80,7 +80,7 @@ if (isLocal) {
 
 ## Production Deployment
 
-### Building for Production
+### Local Production Build
 
 ```bash
 npm run env:production     # Set production environment
@@ -89,6 +89,52 @@ node .output/server/index.mjs  # Start production server
 ```
 
 The production server will run on **http://localhost:3000**
+
+### Netlify Deployment
+
+The application is configured for automatic Netlify deployment:
+
+1. **Connect Repository** to Netlify
+2. **Build settings** are automatically configured via `netlify.toml`
+3. **Environment variables** are set automatically during build
+
+#### Manual Environment Setup (Optional)
+
+If you need to override the default settings, add these environment variables in Netlify dashboard:
+
+```
+NODE_ENV=production
+NUXT_ENV=production
+NUXT_PUBLIC_API_URL=https://your-app-name.netlify.app
+NUXT_PUBLIC_APP_NAME=Galaxy Registry 42
+NUXT_DEBUG=false
+```
+
+#### Build Configuration
+
+- **Build command**: `npm run build:netlify`
+- **Publish directory**: `.output/public`
+- **Node version**: 18+ (automatically detected)
+
+#### Setting Your Domain
+
+After deployment, update the configuration with your actual Netlify domain:
+
+```bash
+# Replace with your actual Netlify domain
+npm run netlify:update-domain your-app-name.netlify.app
+```
+
+This will update both `netlify.toml` and `package.json` with the correct domain.
+
+#### Troubleshooting "Local" Badge Issue
+
+If your deployed app shows "Local" badge instead of "Production":
+
+1. Check that environment variables are set correctly in Netlify dashboard
+2. Ensure the build command uses `npm run build:netlify`
+3. Verify that `NODE_ENV=production` and `NUXT_ENV=production` are set
+4. Clear Netlify build cache and redeploy
 
 ### Production Features
 

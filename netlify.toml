@@ -1,0 +1,27 @@
+[build]
+  command = "npm run build:netlify"
+  publish = ".output/public"
+
+[build.environment]
+  NODE_ENV = "production"
+  NUXT_ENV = "production"
+  NUXT_PUBLIC_API_URL = "https://galaxy-registry-42.netlify.app"
+  NUXT_PUBLIC_APP_NAME = "Galaxy Registry 42"
+  NUXT_DEBUG = "false"
+  NUXT_LOG_LEVEL = "error"
+  NUXT_PUBLIC_ENABLE_DEV_TOOLS = "false"
+  NUXT_PUBLIC_HOT_RELOAD = "false"
+
+# Redirect rules (optional)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
