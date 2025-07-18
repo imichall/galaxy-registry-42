@@ -1,0 +1,28 @@
+{
+  "name": "galaxy-registry-42",
+  "version": "1.0.0",
+  "description": "Galaxy Registry 42 - User Data Management",
+  "author": "Michal Svoboda",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "env:local": "node scripts/set-env.js local",
+    "env:production": "node scripts/set-env.js production",
+    "env:show": "node scripts/set-env.js --show",
+    "env:help": "node scripts/set-env.js --help",
+    "dev:local": "npm run env:local && nuxt dev",
+    "build:production": "npm run env:production && nuxt build"
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "nuxt": "^3.8.0"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.11.1"
+  }
+}
