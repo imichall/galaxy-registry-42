@@ -1,399 +1,319 @@
 <template>
   <div class="data-table">
-    <div class="desktop-table">
-      <div class="table-wrapper">
-        <table>
-          <thead class="table-header characters">
-            <tr>
-              <th></th>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Gender</th>
-              <th>Ability</th>
-              <th>Minimal distance</th>
-              <th>Weight</th>
-              <th>Born</th>
-              <th>In space since</th>
-              <th>Beer consumption (l/y)</th>
-              <th>Knows the answer?</th>
-              <th>delete</th>
-            </tr>
-          </thead>
+    <TableControls
+      :start-index="startIndex"
+      :end-index="endIndex"
+      :total-items="processedCharacters.length"
+      :total-unique-items="uniqueCharacters.length"
+      :is-filtered="processedCharacters.length !== uniqueCharacters.length"
+      :items-per-page="itemsPerPage"
+      :items-per-page-options="itemsPerPageOptions"
+      @update:itemsPerPage="changeItemsPerPage"
+    />
 
-          <tbody>
-            <template v-for="character in characters" :key="character.data.ID">
-              <tr>
-                <td>
-                  <button
-                    v-if="hasNemesis(character)"
-                    class="expand-button"
-                    :class="{
-                      expanded: isCharacterExpanded(character.data.ID),
-                    }"
-                    @click="toggleCharacterExpanded(character.data.ID)"
-                    title="Rozbalit/sbalit nemesis"
-                  >
-                    ▶
-                  </button>
-                </td>
-                <td>{{ character.data.ID }}</td>
-                <td>{{ character.data.Name }}</td>
-                <td>{{ character.data.Gender }}</td>
-                <td>{{ character.data.Ability }}</td>
-                <td>{{ character.data["Minimal distance"] }}</td>
-                <td>{{ character.data.Weight }}</td>
-                <td>{{ formatDate(character.data.Born) }}</td>
-                <td>{{ formatDate(character.data["In space since"]) }}</td>
-                <td>{{ character.data["Beer consumption (l/y)"] }}</td>
-                <td>
-                  {{ formatBoolean(character.data["Knows the answer?"]) }}
-                </td>
-                <td>
-                  <button
-                    class="delete-button"
-                    @click="
-                      $emit(
-                        'delete-character',
-                        character.data.ID,
-                        character.data.Name
-                      )
-                    "
-                    title="Remove postavu"
-                  >
-                    ✕
-                  </button>
-                </td>
-              </tr>
+    <DesktopTable
+      :characters="paginatedCharacters"
+      :filters="filters"
+      :unique-abilities="uniqueAbilities"
+      :sort-by="sortBy"
+      :sort-order="sortOrder"
+      :is-character-expanded="isCharacterExpanded"
+      :is-nemesis-expanded="isNemesisExpanded"
+      :has-nemesis="hasNemesis"
+      :has-secrets="hasSecrets"
+      :format-date="formatDate"
+      :format-boolean="formatBoolean"
+      :should-highlight="shouldHighlight"
+      :is-different-property="isDifferentProperty"
+      :duplicated-ids="duplicatedIds"
+      @sort="handleSort"
+      @clear-filters="clearFilters"
+      @update:filters="updateFilters"
+      @toggle-character="toggleCharacterExpanded"
+      @toggle-nemesis="toggleNemesisExpanded"
+      @delete-character="handleDeleteCharacter"
+      @delete-nemesis="handleDeleteNemesis"
+      @delete-secret="handleDeleteSecret"
+      @row-hover="handleRowHover"
+      @row-leave="handleRowLeave"
+    />
 
-              <tr
-                v-if="
-                  isCharacterExpanded(character.data.ID) &&
-                  hasNemesis(character)
-                "
-              >
-                <td colspan="12" style="padding: 0">
-                  <div class="nested-table">
-                    <table>
-                      <thead class="table-header nemesis">
-                        <tr>
-                          <th></th>
-                          <th>ID</th>
-                          <th>Character ID</th>
-                          <th>Is alive?</th>
-                          <th>Years</th>
-                          <th>delete</th>
-                        </tr>
-                      </thead>
+    <Pagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      @go-to-page="goToPage"
+    />
 
-                      <tbody>
-                        <template
-                          v-for="nemesis in character.children.has_nemesis
-                            ?.records"
-                          :key="nemesis.data.ID"
-                        >
-                          <tr>
-                            <td>
-                              <button
-                                v-if="hasSecrets(nemesis)"
-                                class="expand-button"
-                                :class="{
-                                  expanded: isNemesisExpanded(
-                                    character.data.ID,
-                                    nemesis.data.ID
-                                  ),
-                                }"
-                                @click="
-                                  toggleNemesisExpanded(
-                                    character.data.ID,
-                                    nemesis.data.ID
-                                  )
-                                "
-                                title="Rozbalit/sbalit secrets"
-                              >
-                                ▶
-                              </button>
-                            </td>
-                            <td>{{ nemesis.data.ID }}</td>
-                            <td>{{ nemesis.data["Character ID"] }}</td>
-                            <td>
-                              {{ formatBoolean(nemesis.data["Is alive?"]) }}
-                            </td>
-                            <td>{{ nemesis.data.Years }}</td>
-                            <td>
-                              <button
-                                class="delete-button"
-                                @click="
-                                  $emit(
-                                    'delete-nemesis',
-                                    character.data.ID,
-                                    nemesis.data.ID,
-                                    `Nemesis ${nemesis.data.ID}`
-                                  )
-                                "
-                                title="Remove nemesis"
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-
-                          <tr
-                            v-if="
-                              isNemesisExpanded(
-                                character.data.ID,
-                                nemesis.data.ID
-                              ) && hasSecrets(nemesis)
-                            "
-                          >
-                            <td colspan="6" style="padding: 0">
-                              <div class="nested-table">
-                                <table>
-                                  <thead class="table-header secrets">
-                                    <tr>
-                                      <th>ID</th>
-                                      <th>Nemesis ID</th>
-                                      <th>Secrete Code</th>
-                                      <th>delete</th>
-                                    </tr>
-                                  </thead>
-
-                                  <tbody>
-                                    <tr
-                                      v-for="secret in nemesis.children
-                                        .has_secrete?.records"
-                                      :key="secret.data.ID"
-                                    >
-                                      <td>{{ secret.data.ID }}</td>
-                                      <td>{{ secret.data["Nemesis ID"] }}</td>
-                                      <td>{{ secret.data["Secrete Code"] }}</td>
-                                      <td>
-                                        <button
-                                          class="delete-button"
-                                          @click="
-                                            $emit(
-                                              'delete-secret',
-                                              character.data.ID,
-                                              nemesis.data.ID,
-                                              secret.data.ID,
-                                              secret.data['Secrete Code']
-                                            )
-                                          "
-                                          title="Remove secret"
-                                        >
-                                          ✕
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </td>
-                          </tr>
-                        </template>
-                      </tbody>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="mobile-cards">
-      <div
-        v-for="character in characters"
-        :key="`mobile-${character.data.ID}`"
-        class="character-card"
-      >
-        <div class="character-header">
-          <div class="character-info">
-            <div class="character-name">{{ character.data.Name }}</div>
-            <div class="character-details">
-              ID: {{ character.data.ID }} • {{ character.data.Gender }} •
-              {{ character.data.Ability }}
-            </div>
-          </div>
-          <div class="character-actions">
-            <button
-              v-if="hasNemesis(character)"
-              class="mobile-expand-btn"
-              :class="{ expanded: isCharacterExpanded(character.data.ID) }"
-              @click="toggleCharacterExpanded(character.data.ID)"
-              title="Rozbalit/sbalit nemesis"
-            >
-              ➤
-            </button>
-            <button
-              class="mobile-delete-btn"
-              @click="
-                $emit(
-                  'delete-character',
-                  character.data.ID,
-                  character.data.Name
-                )
-              "
-              title="Remove postavu"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        <div class="character-body">
-          <div class="info-grid">
-            <div class="info-item">
-              <div class="info-label">Vzdálenost</div>
-              <div class="info-value">
-                {{ character.data["Minimal distance"] }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Váha</div>
-              <div class="info-value">{{ character.data.Weight }}</div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Narozen</div>
-              <div class="info-value">
-                {{ formatDate(character.data.Born) }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Ve vesmíru od</div>
-              <div class="info-value">
-                {{ formatDate(character.data["In space since"]) }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Pivo (l/rok)</div>
-              <div class="info-value">
-                {{ character.data["Beer consumption (l/y)"] }}
-              </div>
-            </div>
-            <div class="info-item">
-              <div class="info-label">Zná odpověď?</div>
-              <div class="info-value">
-                {{ formatBoolean(character.data["Knows the answer?"]) }}
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-if="
-              isCharacterExpanded(character.data.ID) && hasNemesis(character)
-            "
-            class="nemesis-section"
-          >
-            <div class="nemesis-header">Nemesis</div>
-
-            <div
-              v-for="nemesis in character.children.has_nemesis?.records"
-              :key="`mobile-nemesis-${nemesis.data.ID}`"
-              class="nemesis-card"
-            >
-              <div class="nemesis-info">
-                <div class="nemesis-details">
-                  <div class="nemesis-id">
-                    Nemesis ID: {{ nemesis.data.ID }}
-                  </div>
-                  <div class="nemesis-meta">
-                    Naživu: {{ formatBoolean(nemesis.data["Is alive?"]) }} •
-                    Roků: {{ nemesis.data.Years }}
-                  </div>
-                </div>
-                <div class="character-actions">
-                  <button
-                    v-if="hasSecrets(nemesis)"
-                    class="mobile-expand-btn small"
-                    :class="{
-                      expanded: isNemesisExpanded(
-                        character.data.ID,
-                        nemesis.data.ID
-                      ),
-                    }"
-                    @click="
-                      toggleNemesisExpanded(character.data.ID, nemesis.data.ID)
-                    "
-                    title="Rozbalit/sbalit secrets"
-                  >
-                    ➤
-                  </button>
-                  <button
-                    class="small-delete-btn"
-                    @click="
-                      $emit(
-                        'delete-nemesis',
-                        character.data.ID,
-                        nemesis.data.ID,
-                        `Nemesis ${nemesis.data.ID}`
-                      )
-                    "
-                    title="Remove nemesis"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div
-                v-if="
-                  isNemesisExpanded(character.data.ID, nemesis.data.ID) &&
-                  hasSecrets(nemesis)
-                "
-                class="secrets-section"
-              >
-                <div class="secrets-header">Tajné kódy</div>
-                <div
-                  v-for="secret in nemesis.children.has_secrete?.records"
-                  :key="`mobile-secret-${secret.data.ID}`"
-                  class="secret-item"
-                >
-                  <div>
-                    <div class="secret-code">
-                      {{ secret.data["Secrete Code"] }}
-                    </div>
-                    <div class="secret-id">ID: {{ secret.data.ID }}</div>
-                  </div>
-                  <button
-                    class="small-delete-btn"
-                    @click="
-                      $emit(
-                        'delete-secret',
-                        character.data.ID,
-                        nemesis.data.ID,
-                        secret.data.ID,
-                        secret.data['Secrete Code']
-                      )
-                    "
-                    title="Remove secret"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <MobileView
+      :characters="paginatedCharacters"
+      :filters="filters"
+      :unique-abilities="uniqueAbilities"
+      :is-character-expanded="isCharacterExpanded"
+      :is-nemesis-expanded="isNemesisExpanded"
+      :has-nemesis="hasNemesis"
+      :has-secrets="hasSecrets"
+      :format-date="formatDate"
+      :format-boolean="formatBoolean"
+      :should-highlight="shouldHighlight"
+      :is-different-property="isDifferentProperty"
+      :duplicated-ids="duplicatedIds"
+      @clear-filters="clearFilters"
+      @update:filters="updateFilters"
+      @toggle-character="toggleCharacterExpanded"
+      @toggle-nemesis="toggleNemesisExpanded"
+      @delete-character="handleDeleteCharacter"
+      @delete-nemesis="handleDeleteNemesis"
+      @delete-secret="handleDeleteSecret"
+      @row-hover="handleRowHover"
+      @row-leave="handleRowLeave"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 // @ts-nocheck
 import { useCharacterData } from "../composables/useCharacterData";
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, ref, computed } from "vue";
 import type { Character, NemesisRecord } from "../types";
+import TableControls from "./TableControls.vue";
+import DesktopTable from "./DesktopTable.vue";
+import MobileView from "./MobileView.vue";
+import Pagination from "./Pagination.vue";
 
 interface Props {
   characters: Character[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-defineEmits<{
-  "delete-character": [id: string, name: string];
+const filters = ref({
+  id: "",
+  name: "",
+  gender: "",
+  ability: "",
+  minimalDistance: "",
+  weight: "",
+  born: "",
+  inSpaceSince: "",
+  beerConsumption: "",
+  knowsAnswer: "",
+});
+
+const uniqueAbilities = computed(() => {
+  if (!props.characters) return [];
+
+  const abilities = new Set();
+  props.characters.forEach((character) => {
+    if (character.data.Ability) {
+      abilities.add(character.data.Ability);
+    }
+  });
+
+  return Array.from(abilities).sort();
+});
+
+const sortBy = ref("");
+const sortOrder = ref<"asc" | "desc">("asc");
+
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const itemsPerPageOptions = [5, 10, 20, 50, 100];
+
+// Hover state for highlighting similar IDs
+const hoveredCharacterId = ref<string | null>(null);
+
+// Get duplicated IDs and their differences
+const duplicatedIds = computed(() => {
+  if (!props.characters) return new Map();
+
+  const idGroups = new Map();
+  props.characters.forEach((char) => {
+    const id = char.data.ID;
+    if (!idGroups.has(id)) {
+      idGroups.set(id, []);
+    }
+    idGroups.get(id).push(char);
+  });
+
+  // Only keep groups with more than 1 character
+  const duplicates = new Map();
+  idGroups.forEach((chars, id) => {
+    if (chars.length > 1) {
+      duplicates.set(id, chars);
+    }
+  });
+
+  return duplicates;
+});
+
+const shouldHighlight = (character: any) => {
+  if (!hoveredCharacterId.value) return false;
+  return character.data.ID === hoveredCharacterId.value;
+};
+
+const isDifferentProperty = (character: any, property: string) => {
+  if (
+    !hoveredCharacterId.value ||
+    character.data.ID !== hoveredCharacterId.value
+  ) {
+    return false;
+  }
+
+  const duplicates = duplicatedIds.value.get(hoveredCharacterId.value);
+  if (!duplicates || duplicates.length < 2) return false;
+
+  const values = duplicates.map((char) => char.data[property]);
+  return new Set(values).size > 1;
+};
+
+const handleRowHover = (character: any) => {
+  if (duplicatedIds.value.has(character.data.ID)) {
+    hoveredCharacterId.value = character.data.ID;
+  }
+};
+
+const handleRowLeave = () => {
+  hoveredCharacterId.value = null;
+};
+
+const uniqueCharacters = computed(() => {
+  if (!props.characters || props.characters.length === 0) {
+    return [];
+  }
+
+  const clonedData = JSON.parse(JSON.stringify(props.characters));
+
+  const uniqueData = clonedData.filter(
+    (character: any, index: number, arr: any[]) => {
+      return (
+        arr.findIndex((c: any) => {
+          return JSON.stringify(c.data) === JSON.stringify(character.data);
+        }) === index
+      );
+    }
+  );
+  return uniqueData;
+});
+
+const processedCharacters = computed(() => {
+  const uniqueData = uniqueCharacters.value;
+
+  const filteredData = uniqueData.filter((character: any) => {
+    const data = character.data;
+
+    return (
+      data.ID.toLowerCase().includes(filters.value.id.toLowerCase()) &&
+      data.Name.toLowerCase().includes(filters.value.name.toLowerCase()) &&
+      data.Gender.toLowerCase().includes(filters.value.gender.toLowerCase()) &&
+      data.Ability.toLowerCase().includes(
+        filters.value.ability.toLowerCase()
+      ) &&
+      data["Minimal distance"]
+        .toString()
+        .includes(filters.value.minimalDistance) &&
+      data.Weight.toString().includes(filters.value.weight) &&
+      data.Born.toLowerCase().includes(filters.value.born.toLowerCase()) &&
+      data["In space since"]
+        .toLowerCase()
+        .includes(filters.value.inSpaceSince.toLowerCase()) &&
+      data["Beer consumption (l/y)"]
+        .toString()
+        .includes(filters.value.beerConsumption) &&
+      data["Knows the answer?"]
+        .toLowerCase()
+        .includes(filters.value.knowsAnswer.toLowerCase())
+    );
+  });
+
+  if (sortBy.value) {
+    filteredData.sort((a: any, b: any) => {
+      let aValue: any, bValue: any;
+
+      switch (sortBy.value) {
+        case "id":
+          aValue = parseInt(a.data.ID);
+          bValue = parseInt(b.data.ID);
+          break;
+        case "name":
+          aValue = a.data.Name.toLowerCase();
+          bValue = b.data.Name.toLowerCase();
+          break;
+        case "born":
+          aValue = new Date(a.data.Born.replace(/ [A-Z]{3,4} /, " ")).getTime();
+          bValue = new Date(b.data.Born.replace(/ [A-Z]{3,4} /, " ")).getTime();
+          if (isNaN(aValue)) aValue = 0;
+          if (isNaN(bValue)) bValue = 0;
+          break;
+        default:
+          return 0;
+      }
+
+      const result = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      return sortOrder.value === "asc" ? result : -result;
+    });
+  }
+
+  return filteredData;
+});
+
+const paginatedCharacters = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return processedCharacters.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(processedCharacters.value.length / itemsPerPage.value);
+});
+
+const startIndex = computed(() => {
+  return processedCharacters.value.length === 0
+    ? 0
+    : (currentPage.value - 1) * itemsPerPage.value + 1;
+});
+
+const endIndex = computed(() => {
+  return Math.min(
+    currentPage.value * itemsPerPage.value,
+    processedCharacters.value.length
+  );
+});
+
+const handleSort = (column: string) => {
+  if (sortBy.value === column) {
+    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  } else {
+    sortBy.value = column;
+    sortOrder.value = "asc";
+  }
+  currentPage.value = 1;
+};
+
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
+
+const changeItemsPerPage = (newSize: number) => {
+  itemsPerPage.value = newSize;
+  currentPage.value = 1;
+};
+
+const clearFilters = () => {
+  Object.keys(filters.value).forEach((key) => {
+    filters.value[key] = "";
+  });
+  currentPage.value = 1;
+};
+
+const updateFilters = (newFilters: any) => {
+  filters.value = { ...newFilters };
+  currentPage.value = 1;
+};
+
+const emit = defineEmits<{
+  "delete-character": [character: Character];
   "delete-nemesis": [characterId: string, nemesisId: string, name: string];
   "delete-secret": [
     characterId: string,
@@ -402,6 +322,27 @@ defineEmits<{
     code: string
   ];
 }>();
+
+const handleDeleteCharacter = (character: Character, index: number) => {
+  emit("delete-character", character);
+};
+
+const handleDeleteNemesis = (
+  characterId: string,
+  nemesisId: string,
+  name: string
+) => {
+  emit("delete-nemesis", characterId, nemesisId, name);
+};
+
+const handleDeleteSecret = (
+  characterId: string,
+  nemesisId: string,
+  secretId: string,
+  code: string
+) => {
+  emit("delete-secret", characterId, nemesisId, secretId, code);
+};
 
 const {
   toggleCharacterExpanded,
@@ -428,21 +369,15 @@ const hasSecrets = (nemesis: NemesisRecord): boolean => {
 </script>
 
 <style scoped>
-.nested-table {
-  background: #fafafa;
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none;
+  }
 }
 
-.nested-table .nested-table {
-  background: #f0f0f0;
-}
-
-.nested-table td {
-  font-size: 12px;
-}
-
-.nested-table .table-header th {
-  color: #000;
-  font-size: 12px;
-  padding: 8px 12px;
+@media (min-width: 769px) {
+  .mobile-cards {
+    display: none;
+  }
 }
 </style>

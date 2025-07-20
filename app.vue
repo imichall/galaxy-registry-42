@@ -36,6 +36,7 @@
 import { onMounted, computed } from "vue";
 import { useCharacterData } from "./composables/useCharacterData";
 import { useEnvironment } from "./composables/useEnvironment";
+import type { Character } from "./types";
 
 const env = useEnvironment();
 
@@ -67,12 +68,12 @@ onMounted(() => {
   loadCharacters();
 });
 
-const handleDeleteByCharacter = (
-  characterId: string,
-  characterName: string
-) => {
-  showDeleteConfirmation("character", characterId, characterName, () =>
-    deleteByCharacter(characterId)
+const handleDeleteByCharacter = (character: Character) => {
+  showDeleteConfirmation(
+    "character",
+    character.data.ID,
+    character.data.Name,
+    () => deleteByCharacter(character)
   );
 };
 
