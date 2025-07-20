@@ -68,8 +68,13 @@
                 class="filter-input"
               >
                 <option value="">All</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
+                <option value="male">male</option>
+                <option value="female">female</option>
+                <option value="m">m</option>
+                <option value="M">M</option>
+                <option value="F">F</option>
+                <option value="mouse">mouse</option>
+                <option value="__empty__">(empty)</option>
               </select>
             </th>
             <th>

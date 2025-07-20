@@ -201,10 +201,18 @@ const processedCharacters = computed(() => {
   const filteredData = uniqueData.filter((character: any) => {
     const data = character.data;
 
+    // Handle special case for empty gender
+    const genderMatch =
+      filters.value.gender === ""
+        ? true
+        : filters.value.gender === "__empty__"
+        ? data.Gender === ""
+        : data.Gender === filters.value.gender;
+
     return (
       data.ID.toLowerCase().includes(filters.value.id.toLowerCase()) &&
       data.Name.toLowerCase().includes(filters.value.name.toLowerCase()) &&
-      data.Gender.toLowerCase().includes(filters.value.gender.toLowerCase()) &&
+      genderMatch &&
       data.Ability.toLowerCase().includes(
         filters.value.ability.toLowerCase()
       ) &&
